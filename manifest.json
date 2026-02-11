@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Creative Blocks",
+  "name": "Creative Block",
   "version": "1.0",
-  "description": "Creative Blocks is a tool that helps you create and edit text, images, and background colors on any webpage",
+  "description": "Creative Block is a tool that helps you create and edit text, images, and background colors on any webpage",
   "permissions": ["contextMenus", "activeTab", "scripting"],
   "background": {
     "service_worker": "background.js"

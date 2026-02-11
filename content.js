@@ -20,6 +20,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     handleImageReplacement(targetImage);
   } else if (request.action === "changeBgColor") {
     showColorPicker(rightClickedElement);
+  } else if (request.action === "changeTextColor") {
+    showTextColorPicker(rightClickedElement);
   } else if (request.action === "toggleBoundaries") {
     toggleElementBoundaries(Boolean(request.enabled));
     sendResponse({ enabled: isBoundaryModeEnabled });
@@ -110,6 +112,11 @@ function handleImageReplacement(imgElement) {
 
 // Show color picker
 function showColorPicker(element) {
+  if (!element || element.nodeType !== Node.ELEMENT_NODE) {
+    alert("Please right-click on an element");
+    return;
+  }
+
   currentElement = element;
   const initialColor = getEffectiveBackgroundColorHex(element);
 
@@ -174,6 +181,77 @@ function showColorPicker(element) {
   });
 
   // Close on overlay click
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) {
+      overlay.remove();
+    }
+  });
+}
+
+function showTextColorPicker(element) {
+  if (!element || element.nodeType !== Node.ELEMENT_NODE) {
+    alert("Please right-click on text");
+    return;
+  }
+
+  currentElement = element;
+  const initialColor = getEffectiveTextColorHex(element);
+
+  const existing = document.getElementById("custom-color-picker-overlay");
+  if (existing) existing.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "custom-color-picker-overlay";
+  overlay.className = "color-picker-overlay";
+
+  const picker = document.createElement("div");
+  picker.className = "color-picker-container";
+
+  picker.innerHTML = `
+    <div class="color-picker-header">Change Text Color</div>
+    <div class="color-picker-body">
+      <input type="color" id="color-input" class="color-circle" value="${initialColor}">
+      <div class="hex-input-container">
+        <label for="hex-input">Hex:</label>
+        <input type="text" id="hex-input" class="hex-input" value="${initialColor}" maxlength="7">
+      </div>
+      <div class="button-container">
+        <button id="apply-color" class="apply-btn">Apply</button>
+        <button id="cancel-color" class="cancel-btn">Cancel</button>
+      </div>
+    </div>
+  `;
+
+  overlay.appendChild(picker);
+  document.body.appendChild(overlay);
+
+  const colorInput = document.getElementById("color-input");
+  const hexInput = document.getElementById("hex-input");
+  const applyBtn = document.getElementById("apply-color");
+  const cancelBtn = document.getElementById("cancel-color");
+
+  colorInput.addEventListener("input", (e) => {
+    hexInput.value = e.target.value;
+  });
+
+  hexInput.addEventListener("input", (e) => {
+    let hex = e.target.value;
+    if (!hex.startsWith("#")) hex = "#" + hex;
+    if (/^#[0-9A-F]{6}$/i.test(hex)) {
+      colorInput.value = hex;
+    }
+  });
+
+  applyBtn.addEventListener("click", () => {
+    const color = colorInput.value;
+    currentElement.style.color = color;
+    overlay.remove();
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    overlay.remove();
+  });
+
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) {
       overlay.remove();
@@ -293,6 +371,20 @@ function getEffectiveBackgroundColorHex(element) {
     window.getComputedStyle(document.body).backgroundColor,
   );
   return bodyHex || "#ffffff";
+}
+
+function getEffectiveTextColorHex(element) {
+  let current = element;
+
+  while (current && current.nodeType === Node.ELEMENT_NODE) {
+    const textColor = window.getComputedStyle(current).color;
+    const hex = cssColorToHex(textColor);
+    if (hex) return hex;
+    current = current.parentElement;
+  }
+
+  const bodyHex = cssColorToHex(window.getComputedStyle(document.body).color);
+  return bodyHex || "#000000";
 }
 
 function cssColorToHex(colorValue) {

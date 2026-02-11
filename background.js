@@ -11,6 +11,12 @@ chrome.runtime.onInstalled.addListener(() => {
     title: "Change Background Color",
     contexts: ["page", "selection", "link", "image"],
   });
+
+  chrome.contextMenus.create({
+    id: "changeTextColor",
+    title: "Change Text Color",
+    contexts: ["page", "selection", "link", "editable"],
+  });
 });
 
 // Handle context menu clicks
@@ -27,6 +33,12 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   } else if (info.menuItemId === "changeBgColor") {
     sendMessageToTab(tab.id, {
       action: "changeBgColor",
+      x: info.x,
+      y: info.y,
+    });
+  } else if (info.menuItemId === "changeTextColor") {
+    sendMessageToTab(tab.id, {
+      action: "changeTextColor",
       x: info.x,
       y: info.y,
     });
@@ -48,6 +60,6 @@ function sendMessageToTab(tabId, message) {
       return;
     }
 
-    console.error("Creative Blocks message error:", lastError.message);
+    console.error("Creative Block message error:", lastError.message);
   });
 }
