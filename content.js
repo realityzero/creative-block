@@ -102,6 +102,7 @@ function handleImageReplacement(imgElement) {
 // Show color picker
 function showColorPicker(element) {
   currentElement = element;
+  const initialColor = getEffectiveBackgroundColorHex(element);
 
   // Remove existing picker if any
   const existing = document.getElementById("custom-color-picker-overlay");
@@ -118,10 +119,10 @@ function showColorPicker(element) {
   picker.innerHTML = `
     <div class="color-picker-header">Change Background Color</div>
     <div class="color-picker-body">
-      <input type="color" id="color-input" class="color-circle" value="#ffffff">
+      <input type="color" id="color-input" class="color-circle" value="${initialColor}">
       <div class="hex-input-container">
         <label for="hex-input">Hex:</label>
-        <input type="text" id="hex-input" class="hex-input" value="#ffffff" maxlength="7">
+        <input type="text" id="hex-input" class="hex-input" value="${initialColor}" maxlength="7">
       </div>
       <div class="button-container">
         <button id="apply-color" class="apply-btn">Apply</button>
@@ -169,4 +170,67 @@ function showColorPicker(element) {
       overlay.remove();
     }
   });
+}
+
+function getEffectiveBackgroundColorHex(element) {
+  let current = element;
+
+  while (current && current.nodeType === Node.ELEMENT_NODE) {
+    const bgColor = window.getComputedStyle(current).backgroundColor;
+    const hex = cssColorToHex(bgColor);
+    if (hex) return hex;
+    current = current.parentElement;
+  }
+
+  const bodyHex = cssColorToHex(window.getComputedStyle(document.body).backgroundColor);
+  return bodyHex || "#ffffff";
+}
+
+function cssColorToHex(colorValue) {
+  if (!colorValue) return null;
+  const color = colorValue.trim().toLowerCase();
+
+  if (color === "transparent" || color === "rgba(0, 0, 0, 0)") {
+    return null;
+  }
+
+  if (/^#[0-9a-f]{6}$/i.test(color)) {
+    return color;
+  }
+
+  if (/^#[0-9a-f]{3}$/i.test(color)) {
+    return (
+      "#" +
+      color[1] +
+      color[1] +
+      color[2] +
+      color[2] +
+      color[3] +
+      color[3]
+    );
+  }
+
+  const rgbMatch = color.match(
+    /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([0-9]*\.?[0-9]+))?\s*\)$/,
+  );
+  if (!rgbMatch) {
+    return null;
+  }
+
+  const alpha = rgbMatch[4] === undefined ? 1 : parseFloat(rgbMatch[4]);
+  if (alpha === 0) {
+    return null;
+  }
+
+  const r = Math.min(255, Math.max(0, parseInt(rgbMatch[1], 10)));
+  const g = Math.min(255, Math.max(0, parseInt(rgbMatch[2], 10)));
+  const b = Math.min(255, Math.max(0, parseInt(rgbMatch[3], 10)));
+
+  return (
+    "#" +
+    [r, g, b]
+      .map((value) => value.toString(16).padStart(2, "0"))
+      .join("")
+      .toLowerCase()
+  );
 }
