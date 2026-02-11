@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        width: 300px;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        margin: 0;
+      }
+      h2 {
+        margin-top: 0;
+        color: #333;
+        font-size: 18px;
+      }
+      .feature {
+        margin-bottom: 15px;
+        padding: 12px;
+        background: #f5f5f5;
+        border-radius: 8px;
+      }
+      .feature h3 {
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        color: #555;
+      }
+      .feature p {
+        margin: 0;
+        font-size: 12px;
+        color: #777;
+        line-height: 1.4;
+      }
+      button {
+        width: 100%;
+        padding: 12px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+        font-weight: 600;
+        margin-top: 10px;
+      }
+      button:hover {
+        background: #45a049;
+      }
+      .status {
+        margin-top: 10px;
+        padding: 8px;
+        background: #e8f5e9;
+        border-radius: 4px;
+        font-size: 12px;
+        text-align: center;
+        color: #2e7d32;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>🛠️ Web Page Editor</h2>
+
+    <div class="feature">
+      <h3>📝 Text Editing</h3>
+      <p>
+        Click the button below to enable text editing mode on the current page
+      </p>
+    </div>
+
+    <button id="toggleEdit">Enable Text Editing</button>
+    <div class="status" id="status"></div>
+
+    <div class="feature" style="margin-top: 20px">
+      <h3>🖱️ Right-Click Options</h3>
+      <p><strong>Replace Image:</strong> Right-click on any image</p>
+      <p><strong>Change BG Color:</strong> Right-click anywhere</p>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
