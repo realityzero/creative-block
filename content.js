@@ -1,5 +1,9 @@
 let currentElement = null;
 let rightClickedElement = null;
+let isBoundaryModeEnabled = false;
+let highlightedElement = null;
+let boundaryOverlay = null;
+let boundaryTagLabel = null;
 
 // Track right-clicked element
 document.addEventListener("contextmenu", (e) => {
@@ -16,6 +20,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     handleImageReplacement(targetImage);
   } else if (request.action === "changeBgColor") {
     showColorPicker(rightClickedElement);
+  } else if (request.action === "toggleBoundaries") {
+    toggleElementBoundaries(Boolean(request.enabled));
+    sendResponse({ enabled: isBoundaryModeEnabled });
+  } else if (request.action === "getBoundaryState") {
+    sendResponse({ enabled: isBoundaryModeEnabled });
   }
 });
 
@@ -172,6 +181,104 @@ function showColorPicker(element) {
   });
 }
 
+function toggleElementBoundaries(enable) {
+  isBoundaryModeEnabled = enable;
+
+  if (isBoundaryModeEnabled) {
+    document.addEventListener("mousemove", handleBoundaryMouseMove, true);
+    window.addEventListener("scroll", refreshBoundaryPosition, true);
+    window.addEventListener("resize", refreshBoundaryPosition, true);
+    return;
+  }
+
+  document.removeEventListener("mousemove", handleBoundaryMouseMove, true);
+  window.removeEventListener("scroll", refreshBoundaryPosition, true);
+  window.removeEventListener("resize", refreshBoundaryPosition, true);
+  highlightedElement = null;
+  hideBoundaryOverlay();
+}
+
+function handleBoundaryMouseMove(event) {
+  if (!isBoundaryModeEnabled) {
+    return;
+  }
+
+  const target = event.target;
+  if (!target || target.nodeType !== Node.ELEMENT_NODE) {
+    hideBoundaryOverlay();
+    return;
+  }
+
+  highlightedElement = target;
+  showBoundaryOverlay(highlightedElement);
+}
+
+function showBoundaryOverlay(element) {
+  const rect = element.getBoundingClientRect();
+  if (!rect.width || !rect.height) {
+    hideBoundaryOverlay();
+    return;
+  }
+
+  if (!boundaryOverlay) {
+    boundaryOverlay = document.createElement("div");
+    boundaryOverlay.id = "creative-block-boundary-overlay";
+    Object.assign(boundaryOverlay.style, {
+      position: "fixed",
+      pointerEvents: "none",
+      border: "3px solid #a855f7",
+      boxSizing: "border-box",
+      zIndex: "2147483647",
+    });
+
+    boundaryTagLabel = document.createElement("div");
+    boundaryTagLabel.id = "creative-block-boundary-tag";
+    Object.assign(boundaryTagLabel.style, {
+      position: "absolute",
+      left: "-2px",
+      top: "-24px",
+      background: "#a855f7",
+      color: "#ffffff",
+      fontSize: "11px",
+      lineHeight: "1",
+      fontFamily: "monospace",
+      padding: "4px 6px",
+      borderRadius: "4px",
+      textTransform: "lowercase",
+      whiteSpace: "nowrap",
+    });
+
+    boundaryOverlay.appendChild(boundaryTagLabel);
+    document.body.appendChild(boundaryOverlay);
+  }
+
+  Object.assign(boundaryOverlay.style, {
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    display: "block",
+  });
+
+  boundaryTagLabel.textContent = `<${element.tagName.toLowerCase()}>`;
+  boundaryTagLabel.style.top = rect.top < 28 ? "0px" : "-24px";
+}
+
+function refreshBoundaryPosition() {
+  if (!isBoundaryModeEnabled || !highlightedElement) {
+    return;
+  }
+  showBoundaryOverlay(highlightedElement);
+}
+
+function hideBoundaryOverlay() {
+  if (boundaryOverlay) {
+    boundaryOverlay.remove();
+    boundaryOverlay = null;
+    boundaryTagLabel = null;
+  }
+}
+
 function getEffectiveBackgroundColorHex(element) {
   let current = element;
 
@@ -182,7 +289,9 @@ function getEffectiveBackgroundColorHex(element) {
     current = current.parentElement;
   }
 
-  const bodyHex = cssColorToHex(window.getComputedStyle(document.body).backgroundColor);
+  const bodyHex = cssColorToHex(
+    window.getComputedStyle(document.body).backgroundColor,
+  );
   return bodyHex || "#ffffff";
 }
 
@@ -200,13 +309,7 @@ function cssColorToHex(colorValue) {
 
   if (/^#[0-9a-f]{3}$/i.test(color)) {
     return (
-      "#" +
-      color[1] +
-      color[1] +
-      color[2] +
-      color[2] +
-      color[3] +
-      color[3]
+      "#" + color[1] + color[1] + color[2] + color[2] + color[3] + color[3]
     );
   }
 
