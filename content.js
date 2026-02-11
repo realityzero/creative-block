@@ -9,11 +9,48 @@ document.addEventListener("contextmenu", (e) => {
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "replaceImage") {
-    handleImageReplacement(rightClickedElement);
+    const targetImage = resolveImageElement(
+      rightClickedElement,
+      request.srcUrl,
+    );
+    handleImageReplacement(targetImage);
   } else if (request.action === "changeBgColor") {
     showColorPicker(rightClickedElement);
   }
 });
+
+function normalizeUrl(url) {
+  if (!url) return "";
+  try {
+    return new URL(url, window.location.href).href;
+  } catch {
+    return url;
+  }
+}
+
+function resolveImageElement(clickedElement, srcUrl) {
+  if (clickedElement?.tagName === "IMG") {
+    return clickedElement;
+  }
+
+  const clickedImage = clickedElement?.closest?.("img");
+  if (clickedImage) {
+    return clickedImage;
+  }
+
+  if (!srcUrl) {
+    return null;
+  }
+
+  const targetUrl = normalizeUrl(srcUrl);
+  const images = Array.from(document.querySelectorAll("img"));
+
+  return (
+    images.find((img) => normalizeUrl(img.currentSrc) === targetUrl) ||
+    images.find((img) => normalizeUrl(img.src) === targetUrl) ||
+    null
+  );
+}
 
 // Handle image replacement
 function handleImageReplacement(imgElement) {
@@ -33,8 +70,21 @@ function handleImageReplacement(imgElement) {
       reader.onload = (event) => {
         const originalWidth = imgElement.width;
         const originalHeight = imgElement.height;
+        const newSrc = event.target.result;
 
-        imgElement.src = event.target.result;
+        // Disable responsive sources so the selected file is always used.
+        imgElement.removeAttribute("srcset");
+        imgElement.removeAttribute("sizes");
+
+        const picture = imgElement.closest("picture");
+        if (picture) {
+          picture.querySelectorAll("source").forEach((source) => {
+            source.removeAttribute("srcset");
+            source.removeAttribute("sizes");
+          });
+        }
+
+        imgElement.src = newSrc;
 
         // Maintain aspect ratio
         if (originalWidth && originalHeight) {
