@@ -13,6 +13,12 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 
   chrome.contextMenus.create({
+    id: "changeBgImage",
+    title: "Change Background Image",
+    contexts: ["page", "selection", "link", "image"],
+  });
+
+  chrome.contextMenus.create({
     id: "changeTextColor",
     title: "Change Text Color",
     contexts: ["page", "selection", "link", "editable"],
@@ -33,6 +39,12 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   } else if (info.menuItemId === "changeBgColor") {
     sendMessageToTab(tab.id, {
       action: "changeBgColor",
+      x: info.x,
+      y: info.y,
+    });
+  } else if (info.menuItemId === "changeBgImage") {
+    sendMessageToTab(tab.id, {
+      action: "changeBgImage",
       x: info.x,
       y: info.y,
     });

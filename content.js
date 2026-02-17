@@ -20,6 +20,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     handleImageReplacement(targetImage);
   } else if (request.action === "changeBgColor") {
     showColorPicker(rightClickedElement);
+  } else if (request.action === "changeBgImage") {
+    showBackgroundImagePicker(rightClickedElement);
   } else if (request.action === "changeTextColor") {
     showTextColorPicker(rightClickedElement);
   } else if (request.action === "toggleBoundaries") {
@@ -257,6 +259,34 @@ function showTextColorPicker(element) {
       overlay.remove();
     }
   });
+}
+
+function showBackgroundImagePicker(element) {
+  if (!element || element.nodeType !== Node.ELEMENT_NODE) {
+    alert("Please right-click on an element");
+    return;
+  }
+
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+
+  input.onchange = (event) => {
+    const file = event.target.files[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const imageUrl = loadEvent.target.result;
+      // Set the selected image even if no prior background image exists.
+      element.style.backgroundImage = `url("${imageUrl}")`;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  input.click();
 }
 
 function toggleElementBoundaries(enable) {
